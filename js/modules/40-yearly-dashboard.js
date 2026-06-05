@@ -473,3 +473,202 @@
       </tr>`).join('');
   };
 })();
+
+/* ============================================================
+   CES Hub v19 — Job Dashboard Target/Actual Overlay Chart Fix
+   - Draws each service target as a grey background bar exactly behind its actual bar.
+   - Keeps only MED/LAB/EHS datasets in Chart.js to prevent 6 separated bars.
+   - Tooltip shows Actual / Target per service.
+============================================================ */
+(function () {
+  'use strict';
+  const MONTH_FULL_V19 = ['', 'January','February','March','April','May','June','July','August','September','October','November','December'];
+  const TEAM_COLORS_V19 = { MED: '#004aad', LAB: '#19a7ce', EHS: '#0fc1a1' };
+  const TARGET_COLOR_V19 = '#e2e8f0';
+
+  function numV19(v) {
+    const n = Number(String(v == null ? '' : v).replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function weekdaysV19(month, year) {
+    if (typeof getYearlyWeekdays === 'function') return getYearlyWeekdays(month, year);
+    let count = 0;
+    const days = new Date(year, month, 0).getDate();
+    for (let d = 1; d <= days; d++) {
+      const dow = new Date(year, month - 1, d).getDay();
+      if (dow !== 0 && dow !== 6) count++;
+    }
+    return count;
+  }
+
+  function completeRowsV19(data, year) {
+    const map = {};
+    (Array.isArray(data) ? data : []).forEach(r => {
+      const m = numV19(r.month);
+      if (m >= 1 && m <= 12) {
+        map[m] = {
+          year: numV19(r.year) || year,
+          month: m,
+          monthName: r.monthName || MONTH_FULL_V19[m],
+          med: numV19(r.med),
+          lab: numV19(r.lab),
+          ehs: numV19(r.ehs)
+        };
+      }
+    });
+    const out = [];
+    for (let m = 1; m <= 12; m++) {
+      out.push(map[m] || { year, month: m, monthName: MONTH_FULL_V19[m], med: 0, lab: 0, ehs: 0 });
+    }
+    return out;
+  }
+
+  const targetOverlayPluginV19 = {
+    id: 'cesJobTargetOverlayV19',
+    beforeDatasetsDraw(chart, args, opts) {
+      const targetsByTeam = (opts && opts.targets) || {};
+      const ctx = chart.ctx;
+      const yScale = chart.scales && chart.scales.y;
+      if (!ctx || !yScale) return;
+
+      ctx.save();
+      ctx.fillStyle = (opts && opts.color) || TARGET_COLOR_V19;
+      ctx.globalAlpha = 1;
+
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const team = String(dataset.label || '').toLowerCase();
+        const targets = targetsByTeam[team];
+        if (!targets) return;
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (!meta || !meta.data) return;
+
+        meta.data.forEach((bar, index) => {
+          const targetValue = numV19(targets[index]);
+          if (targetValue <= 0 || !bar) return;
+          const props = bar.getProps(['x', 'width'], true);
+          const baseY = yScale.getPixelForValue(0);
+          const targetY = yScale.getPixelForValue(targetValue);
+          const h = Math.max(1, Math.abs(baseY - targetY));
+          const w = Math.max((props.width || 8) * 1.65, (props.width || 8) + 5);
+          const x = props.x - (w / 2);
+          const y = Math.min(baseY, targetY);
+          const r = Math.min(5, w / 2, h / 2);
+
+          // rounded rect, compatible with older browsers
+          ctx.beginPath();
+          ctx.moveTo(x + r, y);
+          ctx.lineTo(x + w - r, y);
+          ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+          ctx.lineTo(x + w, y + h - r);
+          ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+          ctx.lineTo(x + r, y + h);
+          ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+          ctx.lineTo(x, y + r);
+          ctx.quadraticCurveTo(x, y, x + r, y);
+          ctx.closePath();
+          ctx.fill();
+        });
+      });
+      ctx.restore();
+    }
+  };
+
+  window.renderYearlyCharts = function (data, teamConfig, year) {
+    const selectedYear = numV19(year) || new Date().getFullYear();
+    const rows = completeRowsV19(data || [], selectedYear);
+    const labels = rows.map(d => String(d.monthName || MONTH_FULL_V19[d.month]).substring(0, 3));
+    const cfg = teamConfig || {};
+    const cap = {
+      med: numV19(cfg.med || 12) || 12,
+      lab: numV19(cfg.lab || 3) || 3,
+      ehs: numV19(cfg.ehs || 3) || 3
+    };
+    const targets = {
+      med: rows.map(d => weekdaysV19(d.month, selectedYear) * cap.med),
+      lab: rows.map(d => weekdaysV19(d.month, selectedYear) * cap.lab),
+      ehs: rows.map(d => weekdaysV19(d.month, selectedYear) * cap.ehs)
+    };
+
+    const canvasT = document.getElementById('yearlyTrendChart');
+    if (canvasT && window.Chart) {
+      const ctxT = canvasT.getContext('2d');
+      if (yearlyTrendChartInstance) yearlyTrendChartInstance.destroy();
+      yearlyTrendChartInstance = new Chart(ctxT, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'MED', data: rows.map(d => numV19(d.med)), backgroundColor: TEAM_COLORS_V19.MED, borderRadius: 5, barPercentage: 0.48, categoryPercentage: 0.72 },
+            { label: 'LAB', data: rows.map(d => numV19(d.lab)), backgroundColor: TEAM_COLORS_V19.LAB, borderRadius: 5, barPercentage: 0.48, categoryPercentage: 0.72 },
+            { label: 'EHS', data: rows.map(d => numV19(d.ehs)), backgroundColor: TEAM_COLORS_V19.EHS, borderRadius: 5, barPercentage: 0.48, categoryPercentage: 0.72 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 350 },
+          scales: {
+            x: { stacked: false, grid: { display: false } },
+            y: { stacked: false, beginAtZero: true, grid: { color: '#f1f5f9' } }
+          },
+          plugins: {
+            cesJobTargetOverlayV19: { targets, color: TARGET_COLOR_V19 },
+            legend: {
+              position: 'bottom',
+              labels: { usePointStyle: true, boxWidth: 7 }
+            },
+            datalabels: {
+              anchor: 'end',
+              align: 'top',
+              formatter: (val) => val > 0 ? val : '',
+              font: { weight: 'bold', size: 10 },
+              color: '#475569',
+              offset: -2,
+              clip: false
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                label: function (ctx) {
+                  const team = String(ctx.dataset.label || '').toLowerCase();
+                  const actual = numV19(ctx.parsed && ctx.parsed.y);
+                  const target = numV19(targets[team] && targets[team][ctx.dataIndex]);
+                  return `${String(ctx.dataset.label || '').toUpperCase()}: ${actual.toLocaleString()} / Target ${target.toLocaleString()}`;
+                }
+              }
+            }
+          }
+        },
+        plugins: [targetOverlayPluginV19].concat(window.ChartDataLabels ? [ChartDataLabels] : [])
+      });
+    }
+
+    const canvasP = document.getElementById('yearlyPieChart');
+    if (canvasP && window.Chart) {
+      const ctxP = canvasP.getContext('2d');
+      if (yearlyPieChartInstance) yearlyPieChartInstance.destroy();
+      const med = rows.reduce((a, d) => a + numV19(d.med), 0);
+      const lab = rows.reduce((a, d) => a + numV19(d.lab), 0);
+      const ehs = rows.reduce((a, d) => a + numV19(d.ehs), 0);
+      yearlyPieChartInstance = new Chart(ctxP, {
+        type: 'doughnut',
+        data: {
+          labels: ['MED', 'LAB', 'EHS'],
+          datasets: [{ data: [med, lab, ehs], backgroundColor: [TEAM_COLORS_V19.MED, TEAM_COLORS_V19.LAB, TEAM_COLORS_V19.EHS], borderWidth: 0 }]
+        },
+        options: {
+          cutout: '75%',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' },
+            datalabels: { formatter: v => v > 0 ? v : '', color: '#fff', font: { weight: 'bold' } }
+          }
+        },
+        plugins: window.ChartDataLabels ? [ChartDataLabels] : []
+      });
+    }
+  };
+})();
