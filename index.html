@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CES Dashboard</title>
+
+    <!-- Core UI libraries / config extracted from original index.html -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/gas-polyfill.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+    <noscript>กรุณาเปิดใช้งาน JavaScript เพื่อใช้งาน CES Hub</noscript>
+    <div id="ces-boot-error" class="hidden"></div>
+
+    <script src="js/core/include-loader.js"></script>
+    <script>
+      window.CES_BUILD_HASH = '20260604-ceshub-ui-theme-v5';
+      CESBoot.loadHtml([
+        {
+                "target": "body",
+                "url": "views/00-login.html"
+        },
+        {
+                "target": "body",
+                "url": "views/01-shell.html"
+        },
+        {
+                "target": "body",
+                "url": "views/98-global-modals.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/home.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/service.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/report.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/yearly.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/revenue.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/calendar.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/checkin.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/report_manage.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/weekly.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/ot.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/users.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/setting.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/kpi.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/stock_dashboard.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/inventory.html"
+        },
+        {
+                "target": "#app-main-content",
+                "url": "views/check_stock.html"
+        }
+]);
+      CESBoot.loadScripts([
+        "js/modules/00-auth-login.js",
+        "js/modules/10-home-dashboard.js",
+        "js/modules/20-service-csi.js",
+        "js/modules/30-report-csi.js",
+        "js/modules/40-yearly-dashboard.js",
+        "js/modules/50-revenue-dashboard.js",
+        "js/modules/60-calendar-master.js",
+        "js/modules/70-checkin.js",
+        "js/modules/80-report-management.js",
+        "js/modules/90-weekly-report.js",
+        "js/modules/100-ot-dashboard.js",
+        "js/modules/110-users-management.js",
+        "js/modules/120-settings.js",
+        "js/modules/130-kpi-dashboard.js",
+        "js/modules/140-stock-dashboard.js",
+        "js/modules/150-stock-inventory.js",
+        "js/modules/160-stock-check.js",
+        "js/modules/900-app-controller.js",
+        "js/modules/990-service-csi-index-fix-v18.js",
+        "js/modules/995-ui-theme-normalizer.js"
+]);
+    </script>
+</body>
+</html>
